@@ -1,0 +1,8 @@
+/generated/
+/payload.tar.gz
+/.flatpak-builder/
+/build/
+/repo/
+*.flatpak
+__pycache__/
+*.pyc

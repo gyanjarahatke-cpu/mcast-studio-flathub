@@ -1,0 +1,8 @@
+{
+  "app_id": "com.mcaststudio.MCast",
+  "version": "1.0.0-beta.1",
+  "runtime": "org.gnome.Platform",
+  "sdk": "org.gnome.Sdk",
+  "runtime_version": "50",
+  "architecture": "x86_64"
+}

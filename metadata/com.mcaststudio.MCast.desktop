@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=MCast Studio
+Comment=Create live productions, recordings, and broadcasts
+Exec=mcast-studio
+Icon=com.mcaststudio.MCast
+Terminal=false
+Categories=AudioVideo;Recorder;Video;
+Keywords=streaming;broadcast;recording;production;
+StartupNotify=true

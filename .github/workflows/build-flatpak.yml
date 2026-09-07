@@ -1,0 +1,73 @@
+name: Build Flatpak candidate
+on:
+  workflow_dispatch:
+    inputs:
+      archive_url:
+        description: Public HTTPS URL of the complete self-contained Linux x64 release tar archive
+        required: true
+        type: string
+      sha256:
+        description: Verified SHA-256 of that release archive
+        required: true
+        type: string
+      version:
+        description: Application release version
+        default: 1.0.0-beta.1
+        required: true
+        type: string
+      release_date:
+        description: Release date in YYYY-MM-DD format
+        required: true
+        type: string
+      screenshot_url:
+        description: Public HTTPS URL of a real Linux application screenshot
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: flatpak-candidate-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  candidate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-50@sha256:1b74b57fa75e61b217e90072aec7ba7d618613fea982106cb3e813c002662162
+      options: --privileged
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Check packaging tools
+        run: python3 -m unittest discover -s tests -v
+      - name: Verify release and generate packaging input
+        env:
+          ARCHIVE_URL: ${{ inputs.archive_url }}
+          ARCHIVE_SHA256: ${{ inputs.sha256 }}
+          RELEASE_VERSION: ${{ inputs.version }}
+          RELEASE_DATE: ${{ inputs.release_date }}
+          SCREENSHOT_URL: ${{ inputs.screenshot_url }}
+        run: |
+          python3 scripts/prepare_release.py --download --archive payload.tar.gz \
+            --url "$ARCHIVE_URL" --sha256 "$ARCHIVE_SHA256" \
+            --version "$RELEASE_VERSION" --date "$RELEASE_DATE" \
+            --screenshot-url "$SCREENSHOT_URL"
+          desktop-file-validate generated/com.mcaststudio.MCast.desktop
+          appstreamcli validate --no-net generated/com.mcaststudio.MCast.metainfo.xml
+      - name: Build the candidate bundle
+        uses: flatpak/flatpak-github-actions/flatpak-builder@0fadf5d65cdfbdb9c94c7a2f3637c41206cc1a70
+        with:
+          manifest-path: generated/com.mcaststudio.MCast.json
+          bundle: MCastStudio-${{ inputs.version }}-x86_64.flatpak
+          arch: x86_64
+          branch: ${{ contains(inputs.version, '-') && 'beta' || 'stable' }}
+          cache: false
+          upload-artifact: true
+      - name: Upload standalone manifest and metadata
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: mcast-flatpak-packaging-${{ inputs.version }}
+          path: generated/
+          if-no-files-found: error
+          retention-days: 14

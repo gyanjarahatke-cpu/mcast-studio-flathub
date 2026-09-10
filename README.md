@@ -8,6 +8,8 @@ Current candidate: **1.0.0-beta.1**. Application ID: **com.mcaststudio.MCast**. 
 
 After the remaining application changes, produce and verify the complete self-contained Linux x64 Release output using the application's normal native build and publish process. The archive must contain the contents of that output at its root, including MCast, native libraries, .NET runtime, Browser, Resources, and Tools. Preserve executable bits and relative library links. Do not include source, credentials, development data, or debug symbols.
 
+Compile native code and publish the managed application against the selected GNOME SDK. The application's canonical Release output can be mounted into that build environment. A build on a newer host distribution can import libc symbols unavailable in the Flatpak runtime. Verify ELF dependencies and launch the installed package inside its declared runtime before publishing the archive.
+
 Publish that Linux archive to an upstream HTTPS release location. Record its SHA-256 and a real screenshot of the Linux application. The packaging workflow requires these actual inputs; it does not contain a fake binary URL or checksum.
 
 Use **Actions ? Build Flatpak candidate ? Run workflow** with the archive URL, SHA-256, version, release date, and screenshot URL. The workflow verifies the archive, generates the manifest and AppStream metadata, builds a Flatpak candidate, and uploads artifacts. Every workflow is manual; pushing this setup starts no build. No private-repository token is required. It does not submit to Flathub or create releases automatically.
@@ -21,6 +23,17 @@ flatpak build-bundle repo MCastStudio.flatpak com.mcaststudio.MCast beta
 ```
 
 The generated directory is the standalone packaging input. It contains only the manifest, launcher, icon, desktop entry, metadata, and flathub.json; it references the verified public archive rather than copying the binary into Git.
+
+For installation testing before the release archive is public, use the same generator with `--local-archive` instead of `--url`:
+
+```sh
+python3 scripts/prepare_release.py --local-archive --archive "$ARCHIVE" --sha256 "$SHA256" --version 1.0.0-beta.1 --date "$RELEASE_DATE"
+flatpak-builder --user --install-deps-from=flathub --repo=repo build generated/com.mcaststudio.MCast.json
+flatpak build-bundle repo MCastStudio.flatpak com.mcaststudio.MCast beta --runtime-repo=https://dl.flathub.org/repo/flathub.flatpakrepo
+flatpak install --user MCastStudio.flatpak
+```
+
+This produces the same application package, launcher, and sandbox permissions using a verified local archive. It does not publish a release or supply invented URLs. A screenshot is optional only for this local installation candidate; the public release workflow still requires a real screenshot. Generated local manifests contain a machine path and must not be committed or submitted to Flathub.
 
 ## Before Flathub submission
 

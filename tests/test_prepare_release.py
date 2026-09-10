@@ -46,6 +46,8 @@ class ReleasePreparationTests(unittest.TestCase):
                 self.assertEqual(manifest['default-branch'], branch)
                 for source in manifest['modules'][0]['sources'][1:]:
                     self.assertTrue((out / source['path']).is_file())
+                self.assertTrue((out / 'mcast-studio').read_bytes().startswith(b'#!/bin/sh\n'))
+                self.assertNotIn(b'\r', (out / 'mcast-studio').read_bytes())
                 release = ET.parse(out / 'com.mcaststudio.MCast.metainfo.xml').find('releases/release')
                 self.assertEqual(release.attrib['version'], version)
                 self.assertFalse(any(p.suffix == '.gz' for p in out.iterdir()))
@@ -56,6 +58,36 @@ class ReleasePreparationTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'self-contained'):
                 prepare.verify_archive(archive, digest)
 
+    def test_local_candidate_uses_same_package_without_fabricated_urls(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            archive, digest = self.archive(root)
+            out = root / 'local'
+            prepare.generate(archive, None, digest, '1.0.0-beta.1', '2026-09-07', None, out, local_archive=True)
+            manifest = json.loads((out / 'com.mcaststudio.MCast.json').read_text())
+            source = manifest['modules'][0]['sources'][0]
+            self.assertEqual(source['path'], str(archive.resolve()))
+            self.assertEqual(source['sha256'], digest)
+            self.assertNotIn('url', source)
+            self.assertEqual(manifest['command'], 'mcast-studio')
+            self.assertIsNone(ET.parse(out / 'com.mcaststudio.MCast.metainfo.xml').find('screenshots'))
+
+    def test_public_candidate_requires_screenshot(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            archive, digest = self.archive(root)
+            with self.assertRaisesRegex(ValueError, 'screenshot'):
+                prepare.generate(archive, 'https://example.org/mcast.tar.gz', digest,
+                                 '1.0.0-beta.1', '2026-09-07', None, root / 'out')
+
+    def test_local_candidate_rejects_public_url(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            archive, digest = self.archive(root)
+            with self.assertRaisesRegex(ValueError, 'must not specify'):
+                prepare.generate(archive, 'https://example.org/mcast.tar.gz', digest,
+                                 '1.0.0-beta.1', '2026-09-07', None, root / 'out', local_archive=True)
+
     def test_wrong_hash_rejected(self):
         with tempfile.TemporaryDirectory() as folder:
             archive, _ = self.archive(Path(folder))
@@ -63,7 +95,8 @@ class ReleasePreparationTests(unittest.TestCase):
                 prepare.verify_archive(archive, '0' * 64)
 
     def test_unsafe_archive_entries_rejected(self):
-        for filename in ['../escape', '/absolute', '.git/config', 'source.cpp', 'private.pfx']:
+        for filename in ['../escape', '/absolute', '.git/config', 'source.cpp', 'private.pfx',
+                         'MCast.NdiBridge.SmokeTests']:
             with self.subTest(filename=filename), tempfile.TemporaryDirectory() as folder:
                 archive, digest = self.archive(Path(folder), tarfile.TarInfo(filename))
                 with self.assertRaises(ValueError):

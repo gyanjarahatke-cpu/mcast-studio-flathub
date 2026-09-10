@@ -17,7 +17,10 @@ ROOT = Path(__file__).resolve().parents[1]
 MAX_BYTES = 8 * 1024**3
 REQUIRED = {
     'MCast', 'MCast.dll', 'MCast.deps.json', 'MCast.runtimeconfig.json',
-    'MCast.Native.Runtime.so', 'libcoreclr.so', 'libhostfxr.so', 'libhostpolicy.so',
+    'MCast.Native.Runtime.so', 'MCast.Native.Automation.so', 'MCast.Native.Tools.so',
+    'MCast.Camera.Native.so', 'MCast.VirtualCamera.Setup', 'libslang-compiler.so',
+    'NativeFilterProviders/x64/MCast.Native.ShaderFilters.so',
+    'libcoreclr.so', 'libhostfxr.so', 'libhostpolicy.so',
     'Browser/MCast.Browser.Host', 'Browser/libcef.so', 'Browser/icudtl.dat',
     'Tools/ffmpeg/ffmpeg', 'Tools/ffmpeg/ffprobe',
 }
@@ -54,6 +57,7 @@ def verify_archive(path, expected_hash):
                 raise ValueError('Release archive contains duplicate paths.')
             names.add(normalized)
             if (set(name.parts) & {'.git', '.ssh', '__pycache__'} or
+                    name.name.endswith(('.Tests', '.SmokeTests')) or
                     name.suffix.lower() in {'.pdb', '.pfx', '.key', '.cs', '.cpp', '.vcxproj'}):
                 raise ValueError('Release archive contains development or private files.')
             if not (member.isfile() or member.isdir() or member.issym() or member.islnk()):
@@ -80,9 +84,16 @@ def verify_archive(path, expected_hash):
     return actual
 
 
-def generate(archive, url, sha256, version, release_date, screenshot_url, output):
-    https_url(url)
-    https_url(screenshot_url)
+def generate(archive, url, sha256, version, release_date, screenshot_url, output, *, local_archive=False):
+    if local_archive:
+        if url is not None:
+            raise ValueError('Local packaging must not specify a release URL.')
+    else:
+        https_url(url)
+        if not screenshot_url:
+            raise ValueError('Public release preparation requires a real screenshot URL.')
+    if screenshot_url:
+        https_url(screenshot_url)
     if not re.fullmatch(r'[1-9]\d*\.\d+\.\d+(?:-(?:beta|rc)\.\d+)?', version):
         raise ValueError('Use a release version such as 1.0.0-beta.1, 1.0.0-rc.1, or 1.0.0.')
     datetime.date.fromisoformat(release_date)
@@ -92,7 +103,10 @@ def generate(archive, url, sha256, version, release_date, screenshot_url, output
     branch = 'beta' if '-' in version else 'stable'
     output.mkdir(parents=True, exist_ok=True)
     for source in (ROOT / 'metadata').iterdir():
-        shutil.copyfile(source, output / source.name)
+        if source.name == 'mcast-studio' or source.suffix == '.desktop':
+            (output / source.name).write_bytes(source.read_text(encoding='utf-8').encode('utf-8'))
+        else:
+            shutil.copyfile(source, output / source.name)
 
     component = ET.Element('component', type='desktop-application')
     for key, value in [('id', app_id), ('metadata_license', 'CC0-1.0'),
@@ -116,9 +130,10 @@ def generate(archive, url, sha256, version, release_date, screenshot_url, output
     rating = ET.SubElement(component, 'content_rating', type='oars-1.1')
     for attribute in ['social-chat', 'social-audio']:
         ET.SubElement(rating, 'content_attribute', id=attribute).text = 'intense'
-    screenshots = ET.SubElement(component, 'screenshots')
-    shot = ET.SubElement(screenshots, 'screenshot', type='default')
-    ET.SubElement(shot, 'image').text = screenshot_url
+    if screenshot_url:
+        screenshots = ET.SubElement(component, 'screenshots')
+        shot = ET.SubElement(screenshots, 'screenshot', type='default')
+        ET.SubElement(shot, 'image').text = screenshot_url
     release = ET.SubElement(ET.SubElement(component, 'releases'), 'release',
                             version=version, date=release_date,
                             type='development' if branch == 'beta' else 'stable')
@@ -126,6 +141,8 @@ def generate(archive, url, sha256, version, release_date, screenshot_url, output
     ET.indent(component)
     ET.ElementTree(component).write(output / (app_id + '.metainfo.xml'), encoding='utf-8', xml_declaration=True)
 
+    archive_source = {'type': 'archive', 'sha256': digest, 'strip-components': 0, 'dest': 'payload'}
+    archive_source['path' if local_archive else 'url'] = str(archive.resolve()) if local_archive else url
     manifest = {
         'app-id': app_id, 'runtime': config['runtime'], 'runtime-version': config['runtime_version'],
         'sdk': config['sdk'], 'command': 'mcast-studio', 'default-branch': branch,
@@ -143,7 +160,7 @@ def generate(archive, url, sha256, version, release_date, screenshot_url, output
                 f'install -Dm644 {app_id}.metainfo.xml /app/share/metainfo/{app_id}.metainfo.xml',
                 f'install -Dm644 {app_id}.png /app/share/icons/hicolor/512x512/apps/{app_id}.png',
             ],
-            'sources': [{'type': 'archive', 'url': url, 'sha256': digest, 'strip-components': 0, 'dest': 'payload'}] +
+            'sources': [archive_source] +
                        [{'type': 'file', 'path': n} for n in ['mcast-studio', app_id + '.desktop', app_id + '.metainfo.xml', app_id + '.png']],
         }],
     }
@@ -155,14 +172,18 @@ def generate(archive, url, sha256, version, release_date, screenshot_url, output
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--archive', type=Path, required=True)
-    parser.add_argument('--url', required=True)
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument('--url')
+    source.add_argument('--local-archive', action='store_true', help='Build an unpublished installation candidate from a local verified archive.')
     parser.add_argument('--sha256', required=True)
     parser.add_argument('--version', default=json.loads((ROOT / 'release.json').read_text())['version'])
     parser.add_argument('--date', required=True)
-    parser.add_argument('--screenshot-url', required=True)
+    parser.add_argument('--screenshot-url')
     parser.add_argument('--output', type=Path, default=ROOT / 'generated')
     parser.add_argument('--download', action='store_true')
     args = parser.parse_args()
+    if args.download and args.local_archive:
+        parser.error('--download requires --url.')
     if args.download:
         https_url(args.url)
         with urllib.request.urlopen(args.url, timeout=120) as response, args.archive.open('wb') as out:
@@ -175,7 +196,8 @@ def main():
                 if total > MAX_BYTES:
                     raise ValueError('Release download exceeds the supported size limit.')
                 out.write(chunk)
-    branch = generate(args.archive, args.url, args.sha256, args.version, args.date, args.screenshot_url, args.output)
+    branch = generate(args.archive, args.url, args.sha256, args.version, args.date, args.screenshot_url, args.output,
+                      local_archive=args.local_archive)
     print('Prepared verified manifest on branch ' + branch)
 
 

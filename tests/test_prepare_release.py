@@ -117,6 +117,24 @@ class ReleasePreparationTests(unittest.TestCase):
             with self.subTest(url=url), self.assertRaises(ValueError):
                 prepare.https_url(url)
 
+    def test_missing_link_target_rejected(self):
+        with tempfile.TemporaryDirectory() as folder:
+            link = tarfile.TarInfo('compiler.so')
+            link.type = tarfile.SYMTYPE
+            link.linkname = 'compiler.so.1'
+            archive, digest = self.archive(Path(folder), link)
+            with self.assertRaisesRegex(ValueError, 'missing link target'):
+                prepare.verify_archive(archive, digest)
+
+    def test_cyclic_link_rejected(self):
+        with tempfile.TemporaryDirectory() as folder:
+            link = tarfile.TarInfo('compiler.so')
+            link.type = tarfile.SYMTYPE
+            link.linkname = 'compiler.so'
+            archive, digest = self.archive(Path(folder), link)
+            with self.assertRaisesRegex(ValueError, 'cyclic link'):
+                prepare.verify_archive(archive, digest)
+
 
 if __name__ == '__main__':
     unittest.main()

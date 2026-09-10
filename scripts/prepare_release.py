@@ -44,6 +44,7 @@ def verify_archive(path, expected_hash):
     if actual != expected_hash.lower():
         raise ValueError('Release archive SHA-256 does not match.')
     names = set()
+    links = {}
     unpacked_bytes = 0
     with tarfile.open(path, 'r:*') as archive:
         for member in archive:
@@ -68,6 +69,7 @@ def verify_archive(path, expected_hash):
                 target = posixpath.normpath(combined)
                 if link.is_absolute() or '\\' in member.linkname or target == '..' or target.startswith('../'):
                     raise ValueError('Release archive contains an escaping link.')
+                links[normalized] = target
             unpacked_bytes += member.size
             if unpacked_bytes > MAX_BYTES:
                 raise ValueError('Unpacked release exceeds the supported size limit.')
@@ -78,6 +80,22 @@ def verify_archive(path, expected_hash):
                     header = executable.read(20)
                 if len(header) < 20 or header[:6] != b'\x7fELF\x02\x01' or header[18:20] != b'\x3e\x00':
                     raise ValueError('MCast must be a Linux x86_64 executable.')
+    for link_name in links:
+        target = link_name
+        visited = set()
+        while True:
+            parts = PurePosixPath(target).parts
+            prefix = next(('/'.join(parts[:i]) for i in range(1, len(parts) + 1)
+                           if '/'.join(parts[:i]) in links), None)
+            if prefix is None:
+                break
+            if prefix in visited:
+                raise ValueError('Release archive contains a cyclic link.')
+            visited.add(prefix)
+            suffix = target[len(prefix):].lstrip('/')
+            target = posixpath.normpath(posixpath.join(links[prefix], suffix))
+        if target not in names:
+            raise ValueError('Release archive contains a missing link target.')
     missing = sorted(REQUIRED - names)
     if missing or not any(n.startswith('Resources/') for n in names):
         raise ValueError('Release is not a complete self-contained Linux payload: ' + ', '.join(missing))

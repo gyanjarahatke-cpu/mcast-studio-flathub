@@ -44,6 +44,9 @@ class ReleasePreparationTests(unittest.TestCase):
                 manifest = json.loads((out / 'com.mcaststudio.MCast.json').read_text())
                 self.assertEqual(manifest['modules'][0]['sources'][0]['sha256'], digest)
                 self.assertEqual(manifest['default-branch'], branch)
+                self.assertIn('--system-talk-name=org.freedesktop.Avahi', manifest['finish-args'])
+                self.assertNotIn('--socket=system-bus', manifest['finish-args'])
+                self.assertNotIn('--system-talk-name=*', manifest['finish-args'])
                 for source in manifest['modules'][0]['sources'][1:]:
                     self.assertTrue((out / source['path']).is_file())
                 self.assertTrue((out / 'mcast-studio').read_bytes().startswith(b'#!/bin/sh\n'))

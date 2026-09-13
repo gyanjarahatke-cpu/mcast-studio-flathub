@@ -168,7 +168,8 @@ def generate(archive, url, sha256, version, release_date, screenshot_url, output
         'finish-args': ['--share=network', '--share=ipc', '--socket=x11', '--socket=wayland',
                         '--socket=pulseaudio', '--device=all', '--filesystem=xdg-run/pipewire-0',
                         '--filesystem=xdg-videos', '--filesystem=xdg-pictures:ro',
-                        '--filesystem=xdg-music:ro', '--talk-name=org.freedesktop.secrets'],
+                        '--filesystem=xdg-music:ro', '--talk-name=org.freedesktop.secrets',
+                        '--system-talk-name=org.freedesktop.Avahi'],
         'modules': [{
             'name': 'mcast-studio', 'buildsystem': 'simple',
             'build-commands': [

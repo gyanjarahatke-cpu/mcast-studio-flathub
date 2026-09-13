@@ -2,13 +2,13 @@
 
 This independent public repository contains packaging tools and desktop metadata for MCast Studio. Application source remains in its private repository. No existing repository needs a visibility change. Windows distribution remains Microsoft Store only; do not upload Windows installers here.
 
-Current release: **1.0.0-beta.1**. Application ID: **com.mcaststudio.MCast**. Packaging targets Linux x86_64 with GNOME runtime 50. Download the upstream beta from [GitHub Releases](https://github.com/gyanjarahatke-cpu/mcast-studio-flathub/releases/tag/v1.0.0-beta.1). A Flathub store listing is not available yet.
+Linux availability: **Coming soon**. Public downloads are paused while application issues are resolved. The **1.0.0-beta.1** candidate is retained privately as a draft for verification. Application ID: **com.mcaststudio.MCast**. Packaging targets Linux x86_64 with GNOME runtime 50. A Flathub store listing is not available yet.
 
 ![MCast Studio workspace with camera preview and audio mixer](screenshots/mcast-studio-workspace.png)
 
 The maintainer-selected listing image is `screenshots/mcast-studio-workspace.png`. The candidate workflow preselects its public URL for the default AppStream screenshot. It is a product screenshot supplied by the maintainer, not evidence of Linux runtime verification.
 
-The September 13 package was installed and launched on an Intel Linux laptop. Required native libraries and FFmpeg loaded successfully, and the installed metadata contains the selected screenshot. Signed-in capture, recording, streaming and additional hardware still require validation for the intended production workflow.
+The September 13 package installed, launched and completed sign-in on an Intel Linux laptop, but subsequent manual testing found missing icons and problems with audio input, video capture and initial canvas/source display. The candidate is not ready for public use. These failures and the complete signed-in workflow must be resolved and verified before publication resumes.
 
 ## Prepare a candidate
 

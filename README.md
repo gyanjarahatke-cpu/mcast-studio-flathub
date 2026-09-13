@@ -2,11 +2,13 @@
 
 This independent public repository contains packaging tools and desktop metadata for MCast Studio. Application source remains in its private repository. No existing repository needs a visibility change. Windows distribution remains Microsoft Store only; do not upload Windows installers here.
 
-Current candidate: **1.0.0-beta.1**. Application ID: **com.mcaststudio.MCast**. Packaging targets Linux x86_64 with GNOME runtime 50. This repository does not claim a published Flathub app or a verified Flatpak runtime yet.
+Current release: **1.0.0-beta.1**. Application ID: **com.mcaststudio.MCast**. Packaging targets Linux x86_64 with GNOME runtime 50. Download the upstream beta from [GitHub Releases](https://github.com/gyanjarahatke-cpu/mcast-studio-flathub/releases/tag/v1.0.0-beta.1). A Flathub store listing is not available yet.
 
 ![MCast Studio workspace with camera preview and audio mixer](screenshots/mcast-studio-workspace.png)
 
 The maintainer-selected listing image is `screenshots/mcast-studio-workspace.png`. The candidate workflow preselects its public URL for the default AppStream screenshot. It is a product screenshot supplied by the maintainer, not evidence of Linux runtime verification.
+
+The September 13 package was installed and launched on an Intel Linux laptop. Required native libraries and FFmpeg loaded successfully, and the installed metadata contains the selected screenshot. Signed-in capture, recording, streaming and additional hardware still require validation for the intended production workflow.
 
 ## Prepare a candidate
 

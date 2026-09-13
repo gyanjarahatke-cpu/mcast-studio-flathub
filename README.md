@@ -4,6 +4,10 @@ This independent public repository contains packaging tools and desktop metadata
 
 Current candidate: **1.0.0-beta.1**. Application ID: **com.mcaststudio.MCast**. Packaging targets Linux x86_64 with GNOME runtime 50. This repository does not claim a published Flathub app or a verified Flatpak runtime yet.
 
+![MCast Studio workspace with camera preview and audio mixer](screenshots/mcast-studio-workspace.png)
+
+The maintainer-selected listing image is `screenshots/mcast-studio-workspace.png`. The candidate workflow preselects its public URL for the default AppStream screenshot. It is a product screenshot supplied by the maintainer, not evidence of Linux runtime verification.
+
 ## Prepare a candidate
 
 After the remaining application changes, produce and verify the complete self-contained Linux x64 Release output using the application's normal native build and publish process. The archive must contain the contents of that output at its root, including MCast, native libraries, .NET runtime, Browser, Resources, and Tools. Preserve executable bits and relative library links. Do not include source, credentials, development data, or debug symbols.
@@ -27,7 +31,7 @@ The generated directory is the standalone packaging input. It contains only the 
 For installation testing before the release archive is public, use the same generator with `--local-archive` instead of `--url`:
 
 ```sh
-python3 scripts/prepare_release.py --local-archive --archive "$ARCHIVE" --sha256 "$SHA256" --version 1.0.0-beta.1 --date "$RELEASE_DATE"
+python3 scripts/prepare_release.py --local-archive --archive "$ARCHIVE" --sha256 "$SHA256" --version 1.0.0-beta.1 --date "$RELEASE_DATE" --screenshot-url https://raw.githubusercontent.com/gyanjarahatke-cpu/mcast-studio-flathub/main/screenshots/mcast-studio-workspace.png
 flatpak-builder --user --install-deps-from=flathub --repo=repo build generated/com.mcaststudio.MCast.json
 flatpak build-bundle repo MCastStudio.flatpak com.mcaststudio.MCast beta --runtime-repo=https://dl.flathub.org/repo/flathub.flatpakrepo
 flatpak install --user MCastStudio.flatpak

@@ -20,7 +20,8 @@ on:
         required: true
         type: string
       screenshot_url:
-        description: Public HTTPS URL of a real Linux application screenshot
+        description: Public HTTPS URL of the application listing screenshot
+        default: https://raw.githubusercontent.com/gyanjarahatke-cpu/mcast-studio-flathub/main/screenshots/mcast-studio-workspace.png
         required: true
         type: string
 permissions:

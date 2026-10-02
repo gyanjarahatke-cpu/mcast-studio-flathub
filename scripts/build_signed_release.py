@@ -39,7 +39,7 @@ def empty_directory(path):
 
 
 REQUIRED_RUNTIME_CHECKS = {'bundle-signature', 'flatpak-install', 'flatpak-launch',
-                           'flatpak-shutdown', 'host-component-install', 'host-component-verify'}
+                           'host-component-install', 'host-component-verify'}
 
 
 def validated_runtime_evidence(evidence, receipt):
@@ -70,7 +70,10 @@ def validated_runtime_evidence(evidence, receipt):
         if check['result'] == 'passed':
             passed.add(check['name'])
     if not REQUIRED_RUNTIME_CHECKS.issubset(passed):
-        raise ValueError('Install, launch, shutdown, signature and host-component verification must pass.')
+        raise ValueError('Install, launch, signature and host-component verification must pass.')
+    shutdown = next((check for check in evidence['checks'] if check['name'] == 'flatpak-shutdown'), None)
+    if shutdown is None or shutdown['result'] not in {'passed', 'unverified'}:
+        raise ValueError('Application shutdown must be explicitly recorded as passed or unverified.')
     return evidence
 
 

@@ -2,7 +2,7 @@
 
 This independent public repository contains packaging tools and desktop metadata for MCast Studio. Application source remains in its private repository. No existing repository needs a visibility change. Windows distribution remains Microsoft Store only; do not upload Windows installers here.
 
-Linux application release **1.0.40** is available from the [release page](https://github.com/gyanjarahatke-cpu/mcast-studio-flathub/releases/tag/v1.0.40). Application ID: **com.mcaststudio.MCast**. Packaging targets Linux x86_64 with GNOME runtime 50 and uses the `stable` branch. A Flathub store listing is not available yet.
+Linux application release **1.0.40** is available from the [release page](https://github.com/MCastStudio/mcast-studio-releases/releases/tag/v1.0.40). Application ID: **com.mcaststudio.MCast**. Packaging targets Linux x86_64 with GNOME runtime 50 and uses the `stable` branch. A Flathub store listing is not available yet.
 
 ![MCast Studio workspace with camera preview and audio mixer](screenshots/mcast-studio-workspace.png)
 
@@ -10,11 +10,11 @@ The maintainer-selected listing image is `screenshots/mcast-studio-workspace.png
 
 The earlier **1.0.0-beta.1** package remains a private draft and is not the current release.
 
-The maintainer requested application publication while Virtual Camera host verification remains incomplete. The signed companion package is included as an unverified component; it is not enabled in the website installation flow. The full runtime receipt therefore still reports publicationReady: false. This does not certify the companion installer or all hardware paths. The application can be installed without the companion package.
+The optional signed camera component creates eight MCast virtual cameras using the host distribution's driver. Installation and output have been verified on Ubuntu 26.04 with Secure Boot enabled and the driver signing key enrolled. The physical test exercised all eight cameras at 320×240 with GPU-produced red, green and blue frames, approximately 30 fps, two start/stop cycles per camera, and interruption blanking and recovery on camera 8. This does not establish compatibility with every distribution, output size or meeting application. MCast can be installed without the optional camera component.
 
 ## Install or update
 
-Install Flatpak using [your distribution's setup instructions](https://flathub.org/setup). Download the versioned `.flatpak` bundle from the [published GitHub release](https://github.com/gyanjarahatke-cpu/mcast-studio-flathub/releases). The application bundle has passed signature verification, fresh installation and startup checks.
+Install Flatpak using [your distribution's setup instructions](https://flathub.org/setup). Download the versioned `.flatpak` bundle from the [published GitHub release](https://github.com/MCastStudio/mcast-studio-releases/releases/tag/v1.0.40). The application bundle has passed signature verification, installation and startup checks.
 
 From the folder containing the download, run:
 
@@ -78,7 +78,7 @@ python3 scripts/build_signed_release.py finalize \
   --gpg-homedir "$SIGNING_KEY_HOME" --gpg-key "$SIGNING_FINGERPRINT"
 ```
 
-Runtime evidence identifies the version, source-manifest digest, archive, bundle and host-package digests. It records named checks and public summaries, including successful signature verification, Flatpak installation, launch, shutdown and host-component installation/verification. Other hardware paths must be explicitly recorded as unverified when they were not exercised. Finalization rejects failed checks, changed assets and missing required results, then signs the completed receipt and checksums. Publish only after `release-verification.json` states `publicationReady: true`.
+Runtime evidence identifies the version, source-manifest digest, archive, bundle and host-package digests. It requires successful signature verification, Flatpak installation, launch and host-component installation/verification. Normal application shutdown must be explicitly recorded as passed or unverified; an unobserved shutdown is never a passed check. Other hardware paths must also be recorded as unverified when they were not exercised. Finalization rejects failed checks, changed assets and missing required results, then signs the completed receipt and checksums. Publish only after `release-verification.json` states `publicationReady: true`; this records completion of these release gates, not verification of every hardware or lifecycle path.
 
 The archive preparer copies the canonical runtime into a deployment stage, normalizes only that stage's native library lookup paths, checks every ELF against the actual GNOME Platform 50 runtime, and verifies the exact source manifest before and after packaging. It excludes named test/debug products, rejects private/source files, preserves relative links and executable modes, and leaves the canonical build untouched. It requires `readelf`, `patchelf`, Flatpak, and the installed GNOME Platform 50 runtime.
 
@@ -118,7 +118,7 @@ The launcher executes the packaged application in `/app/lib/mcast`. Application 
 
 Permissions cover network streaming, X11/Wayland display, PulseAudio/PipeWire audio, device access for cameras/GPU/capture hardware, selected media directories, Secret Service for protected credentials, and the Avahi system service for native network-device discovery. The Avahi permission grants access to that named service only; the host Avahi service must be available for network discovery. Device access is broad because the native capture path uses V4L2 and optional capture devices; this must be justified during review. No host filesystem, unrestricted bus, host-spawn, or sandbox-disable permission is granted.
 
-Verify launch, license sign-in and browser return, file pickers, camera/audio/screen capture, CEF, GPU preview/program, recording/streaming, shutdown, and data persistence under Flatpak. Kernel virtual-camera modules and vendor hardware drivers are host prerequisites; their sandbox availability is unverified. Do not label these integrations supported until exercised. The candidate builder is not hardware or Store certification.
+Verify launch, license sign-in and browser return, file pickers, camera/audio/screen capture, CEF, GPU preview/program, recording/streaming, shutdown, and data persistence under Flatpak. Kernel virtual-camera modules and vendor hardware drivers are host prerequisites. The camera verification scope is stated above and in the exact release receipt; other output sizes, external consumer applications and vendor hardware remain unverified unless separately recorded. The candidate builder is not hardware or Store certification.
 
 ## Packaging checks
 

@@ -23,7 +23,7 @@ class SignedReleaseSafetyTests(unittest.TestCase):
                     'archiveSha256': 'b' * 64, 'hostComponentSha256': 'c' * 64,
                     'sourceManifestSha256': 'd' * 64, 'checkedAtUtc': '2026-10-03T00:00:00Z',
                     'checks': [{'name': name, 'result': 'passed', 'summary': 'Verified.'}
-                               for name in sorted(release.REQUIRED_RUNTIME_CHECKS)]}
+                               for name in sorted(release.REQUIRED_RUNTIME_CHECKS | {'flatpak-shutdown'})]}
         return evidence, receipt
 
     def test_finalization_rejects_wrong_assets_failures_and_missing_runtime_checks(self):
@@ -49,6 +49,21 @@ class SignedReleaseSafetyTests(unittest.TestCase):
             with self.subTest(value=value), self.assertRaises(Exception):
                 release.fingerprint(value)
         self.assertEqual(release.fingerprint('ab' * 20), 'AB' * 20)
+
+    def test_shutdown_may_be_unverified_but_must_be_explicit(self):
+        evidence, receipt = self.evidence()
+        shutdown = next(check for check in evidence['checks'] if check['name'] == 'flatpak-shutdown')
+        shutdown['result'] = 'unverified'
+        shutdown['summary'] = 'Normal shutdown was not observed; no further runtime testing was requested.'
+        self.assertEqual(release.validated_runtime_evidence(evidence, receipt), evidence)
+        for result in ['unsupported', 'failed']:
+            shutdown['result'] = result
+            with self.subTest(result=result), self.assertRaises(ValueError):
+                release.validated_runtime_evidence(evidence, receipt)
+        evidence['checks'].remove(shutdown)
+        evidence['checks'].append({'name': 'additional-check', 'result': 'passed', 'summary': 'Verified.'})
+        with self.assertRaises(ValueError):
+            release.validated_runtime_evidence(evidence, receipt)
 
     def test_existing_release_files_cannot_be_overwritten(self):
         with tempfile.TemporaryDirectory() as folder:

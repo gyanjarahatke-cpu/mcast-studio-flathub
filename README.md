@@ -2,13 +2,43 @@
 
 This independent public repository contains packaging tools and desktop metadata for MCast Studio. Application source remains in its private repository. No existing repository needs a visibility change. Windows distribution remains Microsoft Store only; do not upload Windows installers here.
 
-Linux availability: **Coming soon**. Public downloads are paused while application issues are resolved. The **1.0.0-beta.1** candidate is retained privately as a draft for verification. Application ID: **com.mcaststudio.MCast**. Packaging targets Linux x86_64 with GNOME runtime 50. A Flathub store listing is not available yet.
+Linux release **1.0.40** is being verified before publication. Application ID: **com.mcaststudio.MCast**. Packaging targets Linux x86_64 with GNOME runtime 50 and uses the `stable` branch. A Flathub store listing is not available yet.
 
 ![MCast Studio workspace with camera preview and audio mixer](screenshots/mcast-studio-workspace.png)
 
 The maintainer-selected listing image is `screenshots/mcast-studio-workspace.png`. The candidate workflow preselects its public URL for the default AppStream screenshot. It is a product screenshot supplied by the maintainer, not evidence of Linux runtime verification.
 
-The September 13 package installed, launched and completed sign-in on an Intel Linux laptop, but subsequent manual testing found missing icons and problems with audio input, video capture and initial canvas/source display. The candidate is not ready for public use. These failures and the complete signed-in workflow must be resolved and verified before publication resumes.
+The earlier **1.0.0-beta.1** package remains a private draft and is not the current release.
+
+## Install or update the signed release
+
+Install Flatpak using [your distribution's setup instructions](https://flathub.org/setup). Download the versioned `.flatpak` bundle and `mcast-studio-release-key.asc` from the same [published GitHub release](https://github.com/gyanjarahatke-cpu/mcast-studio-flathub/releases). The release will appear there only after installation and runtime verification succeeds.
+
+From the folder containing those files, run:
+
+```sh
+flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+flatpak install --user --or-update --gpg-file=mcast-studio-release-key.asc MCastStudio-1.0.40-x86_64.flatpak
+flatpak run com.mcaststudio.MCast//stable
+```
+
+The install command checks the bundle signature and downloads the declared runtime if needed. Review the signing-key fingerprint published on the MCast website before trusting the key. `SHA256SUMS` and its detached signature `SHA256SUMS.asc` are also included for independent verification. Download future MCast releases and repeat the install command with the new filename; `flatpak update` alone cannot download new MCast bundles from GitHub Releases.
+
+Camera, microphone and screen-capture access still follows the permissions and portal support of your Linux desktop. Virtual-camera output additionally needs the host's kernel component; the Flatpak cannot install a kernel module inside its sandbox. Follow the website's current Linux installation guidance for this component. Do not assume Windows game-capture hook support applies to Linux.
+
+## Sign the release
+
+Build the canonical self-contained runtime archive inside the selected GNOME SDK, then use the existing manifest generator through the signing-required release tool:
+
+```sh
+python3 scripts/build_signed_release.py \
+  --archive "$ARCHIVE" --sha256 "$SHA256" --version 1.0.40 --date "$RELEASE_DATE" \
+  --screenshot-url "$SCREENSHOT_URL" \
+  --gpg-homedir "$SIGNING_KEY_HOME" --gpg-key "$SIGNING_FINGERPRINT" \
+  --work "$EMPTY_LINUX_WORK_DIRECTORY" --output "$EMPTY_RELEASE_DIRECTORY"
+```
+
+Use one persistent, protected release signing key retained outside Git. The tool requires its full fingerprint, signs the Flatpak repository commit, embeds the public key in the bundle, and signs the release checksums. It never creates a disposable key, copies private-key material, publishes files, or stores secrets in GitHub Actions. The work directory must be on a native Linux filesystem; existing files are never overwritten. Verify the installed package and its runtime behavior before publishing the resulting assets.
 
 ## Prepare a candidate
 
@@ -18,7 +48,7 @@ Compile native code and publish the managed application against the selected GNO
 
 Publish that Linux archive to an upstream HTTPS release location. Record its SHA-256 and a real screenshot of the Linux application. The packaging workflow requires these actual inputs; it does not contain a fake binary URL or checksum.
 
-Use **Actions ? Build Flatpak candidate ? Run workflow** with the archive URL, SHA-256, version, release date, and screenshot URL. The workflow verifies the archive, generates the manifest and AppStream metadata, builds a Flatpak candidate, and uploads artifacts. Every workflow is manual; pushing this setup starts no build. No private-repository token is required. It does not submit to Flathub or create releases automatically.
+Use **Actions → Build unsigned Flatpak candidate → Run workflow** with the archive URL, SHA-256, version, release date, and screenshot URL for packaging checks only. This workflow has no release signing key and its unsigned artifact is not a public release. Every workflow is manual; pushing this setup starts no build. No private-repository token is required. It does not submit to Flathub or create releases automatically.
 
 For local preparation, download the same release archive and run:
 
@@ -45,7 +75,7 @@ This produces the same application package, launcher, and sandbox permissions us
 
 Flathub currently does not accept new beta-only applications. Keep this v1 beta as an upstream candidate. A human maintainer must review the [requirements](https://docs.flathub.org/docs/for-app-authors/requirements) and follow the [submission process](https://docs.flathub.org/docs/for-app-authors/submission) once a stable version has been built, installed, and exercised in the sandbox. Use the current supported runtime at submission time.
 
-Flathub's current policy requires disclosure of AI-generated application or packaging material and its approximate extent. The initial packaging automation, tests, workflow, metadata, and this documentation were prepared with AI assistance; the icon is an existing MCast asset. The private application has also received AI-assisted changes, whose extent the application maintainer must review. An AI agent must not open or automate the Flathub submission PR or generate its submission/review communication. This repository deliberately contains no submission bot or submission PR text template.
+Flathub's current policy requires disclosure of AI-generated application or packaging material and its approximate extent, and prohibits AI-generated or AI-assisted manifests. The packaging automation, generated manifest, tests, workflow, metadata, and this documentation were prepared with AI assistance; the icon is an existing MCast asset. These generated manifests are for the upstream GitHub package, not a Flathub submission. The private application has also received AI-assisted changes, whose extent the application maintainer must review. An AI agent must not open or automate the Flathub submission PR or generate its submission/review communication. This repository deliberately contains no submission bot or submission PR text template.
 
 Validate the manifest with the Flathub linter and metadata with AppStream; supply real Linux screenshots and verify domain ownership for mcaststudio.com. Review the commercial license and redistribution terms before making a binary publicly available. An MCast account and valid application license are required.
 

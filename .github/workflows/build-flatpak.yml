@@ -1,4 +1,4 @@
-name: Build Flatpak candidate
+name: Build unsigned Flatpak candidate
 on:
   workflow_dispatch:
     inputs:
@@ -12,7 +12,7 @@ on:
         type: string
       version:
         description: Application release version
-        default: 1.0.0-beta.1
+        default: 1.0.40
         required: true
         type: string
       release_date:

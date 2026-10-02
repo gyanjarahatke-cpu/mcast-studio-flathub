@@ -58,8 +58,8 @@ def verify_archive(path, expected_hash):
                 raise ValueError('Release archive contains duplicate paths.')
             names.add(normalized)
             if (set(name.parts) & {'.git', '.ssh', '__pycache__'} or
-                    name.name.endswith(('.Tests', '.SmokeTests')) or
-                    name.suffix.lower() in {'.pdb', '.pfx', '.key', '.cs', '.cpp', '.vcxproj'}):
+                    (name.name.startswith('MCast.') and re.search(r'(?:Tests|CrashProbe|Consumer)(?:\.|$)', name.name)) or
+                    name.suffix.lower() in {'.pdb', '.dbg', '.pfx', '.p12', '.pem', '.key', '.cs', '.cpp', '.vcxproj', '.dmp'}):
                 raise ValueError('Release archive contains development or private files.')
             if not (member.isfile() or member.isdir() or member.issym() or member.islnk()):
                 raise ValueError('Release archive contains a special device entry.')

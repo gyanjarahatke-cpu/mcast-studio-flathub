@@ -31,6 +31,12 @@ Camera, microphone and screen-capture access still follows the permissions and p
 Build the canonical self-contained runtime archive inside the selected GNOME SDK, then use the existing manifest generator through the signing-required release tool:
 
 ```sh
+python3 scripts/prepare_runtime_archive.py \
+  --canonical "$REPOSITORY/src/MCastStudio/bin/linux-x64/Release" \
+  --source-manifest "$VERIFIED_SOURCE_MANIFEST" \
+  --stage "$NEW_DEPLOYMENT_STAGE" --archive "$ARCHIVE" \
+  --receipt "$NEW_ARCHIVE_RECEIPT" --epoch "$SOURCE_DATE_EPOCH"
+
 python3 scripts/build_signed_release.py \
   --archive "$ARCHIVE" --sha256 "$SHA256" --version 1.0.40 --date "$RELEASE_DATE" \
   --screenshot-url "$SCREENSHOT_URL" \
@@ -39,6 +45,8 @@ python3 scripts/build_signed_release.py \
 ```
 
 Use one persistent, protected release signing key retained outside Git. The tool requires its full fingerprint, signs the Flatpak repository commit, embeds the public key in the bundle, and signs the release checksums. It never creates a disposable key, copies private-key material, publishes files, or stores secrets in GitHub Actions. The work directory must be on a native Linux filesystem; existing files are never overwritten. Verify the installed package and its runtime behavior before publishing the resulting assets.
+
+The archive preparer copies the canonical runtime into a deployment stage, normalizes only that stage's native library lookup paths, checks every ELF against the actual GNOME Platform 50 runtime, and verifies the exact source manifest before and after packaging. It excludes named test/debug products, rejects private/source files, preserves relative links and executable modes, and leaves the canonical build untouched. It requires `readelf`, `patchelf`, Flatpak, and the installed GNOME Platform 50 runtime.
 
 ## Prepare a candidate
 

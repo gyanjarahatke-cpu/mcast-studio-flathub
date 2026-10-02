@@ -99,7 +99,8 @@ class ReleasePreparationTests(unittest.TestCase):
 
     def test_unsafe_archive_entries_rejected(self):
         for filename in ['../escape', '/absolute', '.git/config', 'source.cpp', 'private.pfx',
-                         'MCast.NdiBridge.SmokeTests']:
+                         'MCast.NdiBridge.SmokeTests', 'MCast.Native.AudioTests',
+                         'MCast.Managed.CrashProbe', 'MCast.Camera.Consumer', 'private.pem']:
             with self.subTest(filename=filename), tempfile.TemporaryDirectory() as folder:
                 archive, digest = self.archive(Path(folder), tarfile.TarInfo(filename))
                 with self.assertRaises(ValueError):

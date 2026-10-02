@@ -23,6 +23,13 @@ REQUIRED = {
     'libcoreclr.so', 'libhostfxr.so', 'libhostpolicy.so',
     'Browser/MCast.Browser.Host', 'Browser/libcef.so', 'Browser/icudtl.dat',
     'Tools/ffmpeg/ffmpeg', 'Tools/ffmpeg/ffprobe',
+    'Tools/virtual-camera/linux/virtual-camera-host-setup',
+    'Tools/virtual-camera/linux/mcast-virtual-camera.service',
+    'Tools/virtual-camera/linux/70-mcast-virtual-camera.rules',
+    'Tools/virtual-camera/linux/cameras.txt',
+    'Tools/virtual-camera/linux/MCastVirtualCameraPlaceholder.png',
+    'Tools/virtual-camera/linux/postinst', 'Tools/virtual-camera/linux/prerm',
+    'Tools/virtual-camera/linux/postrm',
 }
 
 

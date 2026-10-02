@@ -38,13 +38,27 @@ python3 scripts/prepare_runtime_archive.py \
   --receipt "$NEW_ARCHIVE_RECEIPT" --epoch "$SOURCE_DATE_EPOCH"
 
 python3 scripts/build_signed_release.py \
-  --archive "$ARCHIVE" --sha256 "$SHA256" --version 1.0.40 --date "$RELEASE_DATE" \
+  --archive "$ARCHIVE" --archive-receipt "$NEW_ARCHIVE_RECEIPT" \
+  --sha256 "$SHA256" --version 1.0.40 --date "$RELEASE_DATE" \
   --screenshot-url "$SCREENSHOT_URL" \
+  --host-component "$VERIFIED_CAMERA_DEB" \
   --gpg-homedir "$SIGNING_KEY_HOME" --gpg-key "$SIGNING_FINGERPRINT" \
   --work "$EMPTY_LINUX_WORK_DIRECTORY" --output "$EMPTY_RELEASE_DIRECTORY"
 ```
 
 Use one persistent, protected release signing key retained outside Git. The tool requires its full fingerprint, signs the Flatpak repository commit, embeds the public key in the bundle, and signs the release checksums. It never creates a disposable key, copies private-key material, publishes files, or stores secrets in GitHub Actions. The work directory must be on a native Linux filesystem; existing files are never overwritten. Verify the installed package and its runtime behavior before publishing the resulting assets.
+
+The host-camera package must be `mcast-virtual-camera_1.0.40_all.deb`. Its exact assets and installation scripts must match the canonical application archive. The release tool checks package identity, dependencies, ownership, file modes and the fixed file list before signing it separately and including it in the signed checksums. The package requires v4l2loopback 0.15.0 or newer; older utilities do not provide the required device-creation interface.
+
+After testing the exact signed assets, finalize the same output directory:
+
+```sh
+python3 scripts/build_signed_release.py finalize \
+  --output "$RELEASE_DIRECTORY" --runtime-evidence "$VERIFIED_RUNTIME_EVIDENCE" \
+  --gpg-homedir "$SIGNING_KEY_HOME" --gpg-key "$SIGNING_FINGERPRINT"
+```
+
+Runtime evidence identifies the version, source-manifest digest, archive, bundle and host-package digests. It records named checks and public summaries, including successful signature verification, Flatpak installation, launch, shutdown and host-component installation/verification. Other hardware paths must be explicitly recorded as unverified when they were not exercised. Finalization rejects failed checks, changed assets and missing required results, then signs the completed receipt and checksums. Publish only after `release-verification.json` states `publicationReady: true`.
 
 The archive preparer copies the canonical runtime into a deployment stage, normalizes only that stage's native library lookup paths, checks every ELF against the actual GNOME Platform 50 runtime, and verifies the exact source manifest before and after packaging. It excludes named test/debug products, rejects private/source files, preserves relative links and executable modes, and leaves the canonical build untouched. It requires `readelf`, `patchelf`, Flatpak, and the installed GNOME Platform 50 runtime.
 
@@ -58,30 +72,19 @@ Publish that Linux archive to an upstream HTTPS release location. Record its SHA
 
 Use **Actions → Build unsigned Flatpak candidate → Run workflow** with the archive URL, SHA-256, version, release date, and screenshot URL for packaging checks only. This workflow has no release signing key and its unsigned artifact is not a public release. Every workflow is manual; pushing this setup starts no build. No private-repository token is required. It does not submit to Flathub or create releases automatically.
 
-For local preparation, download the same release archive and run:
+To inspect a manifest that references a verified public release archive, run:
 
 ```sh
-python3 scripts/prepare_release.py --archive "$ARCHIVE" --url "$RELEASE_URL" --sha256 "$SHA256" --version 1.0.0-beta.1 --date "$RELEASE_DATE" --screenshot-url "$SCREENSHOT_URL"
-flatpak-builder --user --install-deps-from=flathub --repo=repo build generated/com.mcaststudio.MCast.json
-flatpak build-bundle repo MCastStudio.flatpak com.mcaststudio.MCast beta
+python3 scripts/prepare_release.py --archive "$ARCHIVE" --url "$RELEASE_URL" --sha256 "$SHA256" --version 1.0.40 --date "$RELEASE_DATE" --screenshot-url "$SCREENSHOT_URL"
 ```
 
 The generated directory is the standalone packaging input. It contains only the manifest, launcher, icon, desktop entry, metadata, and flathub.json; it references the verified public archive rather than copying the binary into Git.
 
-For installation testing before the release archive is public, use the same generator with `--local-archive` instead of `--url`:
-
-```sh
-python3 scripts/prepare_release.py --local-archive --archive "$ARCHIVE" --sha256 "$SHA256" --version 1.0.0-beta.1 --date "$RELEASE_DATE" --screenshot-url https://raw.githubusercontent.com/gyanjarahatke-cpu/mcast-studio-flathub/main/screenshots/mcast-studio-workspace.png
-flatpak-builder --user --install-deps-from=flathub --repo=repo build generated/com.mcaststudio.MCast.json
-flatpak build-bundle repo MCastStudio.flatpak com.mcaststudio.MCast beta --runtime-repo=https://dl.flathub.org/repo/flathub.flatpakrepo
-flatpak install --user MCastStudio.flatpak
-```
-
-This produces the same application package, launcher, and sandbox permissions using a verified local archive. It does not publish a release or supply invented URLs. A screenshot is optional only for this local installation candidate; the public release workflow still requires a real screenshot. Generated local manifests contain a machine path and must not be committed or submitted to Flathub.
+For installation testing before the archive is public, use the signing-required release tool above. It invokes this same generator with the verified local archive and does not publish a release or supply invented URLs. Generated local manifests contain a machine path and must not be committed or submitted to Flathub.
 
 ## Before Flathub submission
 
-Flathub currently does not accept new beta-only applications. Keep this v1 beta as an upstream candidate. A human maintainer must review the [requirements](https://docs.flathub.org/docs/for-app-authors/requirements) and follow the [submission process](https://docs.flathub.org/docs/for-app-authors/submission) once a stable version has been built, installed, and exercised in the sandbox. Use the current supported runtime at submission time.
+A human maintainer must review the [requirements](https://docs.flathub.org/docs/for-app-authors/requirements) and follow the [submission process](https://docs.flathub.org/docs/for-app-authors/submission) after the stable release has been built, installed, and exercised in the sandbox. Use the current supported runtime at submission time. This GitHub release does not establish a Flathub listing or approval.
 
 Flathub's current policy requires disclosure of AI-generated application or packaging material and its approximate extent, and prohibits AI-generated or AI-assisted manifests. The packaging automation, generated manifest, tests, workflow, metadata, and this documentation were prepared with AI assistance; the icon is an existing MCast asset. These generated manifests are for the upstream GitHub package, not a Flathub submission. The private application has also received AI-assisted changes, whose extent the application maintainer must review. An AI agent must not open or automate the Flathub submission PR or generate its submission/review communication. This repository deliberately contains no submission bot or submission PR text template.
 

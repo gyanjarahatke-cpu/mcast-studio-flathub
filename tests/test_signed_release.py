@@ -1,4 +1,5 @@
 import importlib.util
+import copy
 import sys
 import tempfile
 import unittest
@@ -12,6 +13,37 @@ spec.loader.exec_module(release)
 
 
 class SignedReleaseSafetyTests(unittest.TestCase):
+    def evidence(self):
+        receipt = {'version': '1.0.40', 'appId': 'com.mcaststudio.MCast',
+                   'bundleSha256': 'a' * 64, 'archiveSha256': 'b' * 64,
+                   'hostComponent': {'sha256': 'c' * 64},
+                   'sourceProvenance': {'sourceManifestSha256': 'd' * 64}}
+        evidence = {'schemaVersion': 1, 'version': '1.0.40', 'appId': receipt['appId'],
+                    'architecture': 'x86_64', 'bundleSha256': 'a' * 64,
+                    'archiveSha256': 'b' * 64, 'hostComponentSha256': 'c' * 64,
+                    'sourceManifestSha256': 'd' * 64, 'checkedAtUtc': '2026-10-03T00:00:00Z',
+                    'checks': [{'name': name, 'result': 'passed', 'summary': 'Verified.'}
+                               for name in sorted(release.REQUIRED_RUNTIME_CHECKS)]}
+        return evidence, receipt
+
+    def test_finalization_rejects_wrong_assets_failures_and_missing_runtime_checks(self):
+        evidence, receipt = self.evidence()
+        self.assertEqual(release.validated_runtime_evidence(evidence, receipt), evidence)
+        for field in ['bundleSha256', 'archiveSha256', 'hostComponentSha256', 'sourceManifestSha256']:
+            altered = copy.deepcopy(evidence)
+            altered[field] = '0' * 64
+            with self.subTest(field=field), self.assertRaises(ValueError):
+                release.validated_runtime_evidence(altered, receipt)
+        for result in ['failed', 'unverified', 'unsupported']:
+            altered = copy.deepcopy(evidence)
+            altered['checks'][0]['result'] = result
+            with self.subTest(result=result), self.assertRaises(ValueError):
+                release.validated_runtime_evidence(altered, receipt)
+        altered = copy.deepcopy(evidence)
+        altered['checks'][0] = altered['checks'][1]
+        with self.assertRaises(ValueError):
+            release.validated_runtime_evidence(altered, receipt)
+
     def test_complete_signing_fingerprint_is_required(self):
         for value in ['12345678', 'release-key', '--help', 'A' * 39, 'A' * 41]:
             with self.subTest(value=value), self.assertRaises(Exception):

@@ -4,6 +4,7 @@ import json
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 scripts = Path(__file__).parents[1] / 'scripts'
@@ -14,6 +15,32 @@ spec.loader.exec_module(runtime)
 
 
 class RuntimeArchiveTests(unittest.TestCase):
+    def test_optional_lttng_omission_is_exact_and_version_reviewed(self):
+        config = {'includedFrameworks': [{'name': 'Microsoft.NETCore.App', 'version': '10.0.8'}]}
+        excluded = runtime.optional_diagnostic_exclusion(Path('libcoreclrtraceptprovider.so'), config)
+        self.assertEqual(excluded['runtimeVersion'], '10.0.8')
+        self.assertIn('DOTNET_LTTng=0', excluded['reason'])
+        for name in ['libcoreclr.so', 'libhostpolicy.so', 'libmscordaccore.so',
+                     'System.Diagnostics.Tracing.dll', 'other/libcoreclrtraceptprovider.so']:
+            self.assertIsNone(runtime.optional_diagnostic_exclusion(Path(name), config))
+        config['includedFrameworks'][0]['version'] = '11.0.0'
+        with self.assertRaisesRegex(ValueError, 'Review the optional tracing'):
+            runtime.optional_diagnostic_exclusion(Path('libcoreclrtraceptprovider.so'), config)
+
+    def test_shipped_elf_missing_dependency_still_fails(self):
+        with tempfile.TemporaryDirectory() as folder:
+            stage = Path(folder).resolve()
+            library = stage / 'required.so'
+            header = bytearray(20)
+            header[:6] = b'\x7fELF\x02\x01'
+            header[18:20] = b'\x3e\x00'
+            library.write_bytes(header)
+            result = runtime.subprocess.CompletedProcess([], 0, 'librequired.so => not found')
+            with patch.object(runtime.subprocess, 'check_output', side_effect=['', '(NEEDED) [librequired.so]']), \
+                 patch.object(runtime.subprocess, 'run', return_value=result), \
+                 self.assertRaisesRegex(ValueError, 'unavailable in GNOME Platform 50'):
+                runtime.validate_elf(library, stage)
+
     def test_source_manifest_rejects_changed_files_and_escaping_paths(self):
         with tempfile.TemporaryDirectory() as folder:
             repository = Path(folder).resolve()

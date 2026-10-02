@@ -1,2 +1,3 @@
 #!/bin/sh
+export DOTNET_LTTng=0
 exec /app/lib/mcast/MCast "$@"

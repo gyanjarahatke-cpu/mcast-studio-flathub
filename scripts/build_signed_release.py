@@ -160,7 +160,7 @@ def main():
         raise ValueError('The runtime archive needs its matching canonical preparation receipt.')
     provenance = {key: archive_receipt[key] for key in
                   ['sourceRevision', 'sourceDirty', 'sourceManifestSha256', 'sourceFilesVerified',
-                   'platform', 'libcMaximumAllowed']}
+                   'platform', 'libcMaximumAllowed', 'excludedOptionalDiagnostics']}
     if (not re.fullmatch(r'[0-9a-f]{40}', provenance['sourceRevision'])
             or not re.fullmatch(r'[0-9a-f]{64}', provenance['sourceManifestSha256'])
             or not isinstance(provenance['sourceDirty'], bool)

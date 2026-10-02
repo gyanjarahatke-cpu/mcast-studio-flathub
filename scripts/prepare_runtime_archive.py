@@ -42,6 +42,17 @@ def development_file(path):
             name.startswith(('MCast.Camera.Consumer', 'MCast.NdiBridge.Consumer', 'MCast.VirtualCamera.Consumer')))
 
 
+def optional_diagnostic_exclusion(relative, runtime):
+    policy = prepare_release.OPTIONAL_DIAGNOSTICS.get(relative.as_posix())
+    if policy is None:
+        return None
+    versions = [framework.get('version') for framework in runtime.get('includedFrameworks', [])
+                if framework.get('name') == 'Microsoft.NETCore.App']
+    if versions != [policy['runtimeVersion']]:
+        raise ValueError('Review the optional tracing provider against this .NET runtime version before packaging.')
+    return {'path': relative.as_posix(), **policy}
+
+
 def validate_canonical(path):
     path = path.resolve(strict=True)
     if tuple(path.parts[-5:]) != ('src', 'MCastStudio', 'bin', 'linux-x64', 'Release'):
@@ -147,7 +158,7 @@ def main():
     runtime = json.loads((canonical / 'MCast.runtimeconfig.json').read_text())['runtimeOptions']
     if runtime.get('framework') or runtime.get('frameworks') or not runtime.get('includedFrameworks'):
         parser.error('Publish the canonical Release as self-contained before packaging.')
-    source_hashes, excluded, entries = {}, [], []
+    source_hashes, excluded, optional_diagnostics, entries = {}, [], [], []
     for path in sorted(canonical.rglob('*')):
         relative = path.relative_to(canonical)
         if set(relative.parts) & PRIVATE_DIRECTORIES or path.suffix.lower() in PRIVATE_SUFFIXES:
@@ -163,6 +174,12 @@ def main():
             source_hashes[relative.as_posix()] = sha256(path)
         elif not path.is_dir():
             raise ValueError('A special filesystem entry entered the canonical payload.')
+        optional_diagnostic = optional_diagnostic_exclusion(relative, runtime)
+        if optional_diagnostic is not None:
+            if path.is_symlink() or not path.is_file():
+                raise ValueError('The optional tracing provider must be a regular file.')
+            optional_diagnostics.append({**optional_diagnostic, 'sha256': source_hashes[relative.as_posix()]})
+            continue
         entries.append(relative)
     stage.mkdir(parents=True)
     for relative in entries:
@@ -211,6 +228,7 @@ def main():
                                   'bytes': archive.stat().st_size, 'selfContained': True,
                                   'libcMaximumAllowed': '2.42', 'platform': 'org.gnome.Platform//50',
                                   'canonicalSourceHashes': source_hashes, 'excludedDevelopmentFiles': excluded,
+                                  'excludedOptionalDiagnostics': optional_diagnostics,
                                   'sourceRevision': source_manifest['revision'], 'sourceDirty': True,
                                   'sourceManifestSha256': source_manifest_hash,
                                   'sourceFilesVerified': len(source_manifest['expected']),

@@ -51,6 +51,8 @@ class ReleasePreparationTests(unittest.TestCase):
                     self.assertTrue((out / source['path']).is_file())
                 self.assertTrue((out / 'mcast-studio').read_bytes().startswith(b'#!/bin/sh\n'))
                 self.assertNotIn(b'\r', (out / 'mcast-studio').read_bytes())
+                self.assertIn(b'export DOTNET_LTTng=0\n', (out / 'mcast-studio').read_bytes())
+                self.assertNotIn(b'DOTNET_EnableDiagnostics', (out / 'mcast-studio').read_bytes())
                 release = ET.parse(out / 'com.mcaststudio.MCast.metainfo.xml').find('releases/release')
                 self.assertEqual(release.attrib['version'], version)
                 self.assertFalse(any(p.suffix == '.gz' for p in out.iterdir()))
@@ -59,6 +61,12 @@ class ReleasePreparationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             archive, digest = self.archive(Path(folder), omit='libcoreclr.so')
             with self.assertRaisesRegex(ValueError, 'self-contained'):
+                prepare.verify_archive(archive, digest)
+
+    def test_disabled_optional_tracing_provider_cannot_enter_archive(self):
+        with tempfile.TemporaryDirectory() as folder:
+            archive, digest = self.archive(Path(folder), extra=tarfile.TarInfo('libcoreclrtraceptprovider.so'))
+            with self.assertRaisesRegex(ValueError, 'disabled optional diagnostics'):
                 prepare.verify_archive(archive, digest)
 
     def test_removed_host_standby_payload_is_not_shipped(self):

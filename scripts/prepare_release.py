@@ -15,6 +15,13 @@ from pathlib import Path, PurePosixPath
 
 ROOT = Path(__file__).resolve().parents[1]
 MAX_BYTES = 8 * 1024**3
+OPTIONAL_DIAGNOSTICS = {
+    'libcoreclrtraceptprovider.so': {
+        'runtimeVersion': '10.0.8',
+        'reason': 'Optional external LTTng provider is disabled by DOTNET_LTTng=0 in the package launcher; EventPipe remains available.',
+        'source': 'https://github.com/dotnet/runtime/blob/v10.0.8/src/coreclr/pal/src/misc/tracepointprovider.cpp',
+    },
+}
 REQUIRED = {
     'MCast', 'MCast.dll', 'MCast.deps.json', 'MCast.runtimeconfig.json',
     'MCast.Native.Runtime.so', 'MCast.Native.Automation.so', 'MCast.Native.Tools.so',
@@ -63,6 +70,8 @@ def verify_archive(path, expected_hash):
             if normalized in names:
                 raise ValueError('Release archive contains duplicate paths.')
             names.add(normalized)
+            if normalized in OPTIONAL_DIAGNOSTICS:
+                raise ValueError('Release archive contains a disabled optional diagnostics provider.')
             if normalized.startswith('Tools/virtual-camera/linux/') and normalized not in REQUIRED:
                 raise ValueError('Release archive contains an unapproved host deployment asset.')
             if (set(name.parts) & {'.git', '.ssh', '__pycache__'} or

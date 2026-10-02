@@ -27,7 +27,6 @@ REQUIRED = {
     'Tools/virtual-camera/linux/mcast-virtual-camera.service',
     'Tools/virtual-camera/linux/70-mcast-virtual-camera.rules',
     'Tools/virtual-camera/linux/cameras.txt',
-    'Tools/virtual-camera/linux/MCastVirtualCameraPlaceholder.png',
     'Tools/virtual-camera/linux/postinst', 'Tools/virtual-camera/linux/prerm',
     'Tools/virtual-camera/linux/postrm',
 }
@@ -64,6 +63,8 @@ def verify_archive(path, expected_hash):
             if normalized in names:
                 raise ValueError('Release archive contains duplicate paths.')
             names.add(normalized)
+            if normalized.startswith('Tools/virtual-camera/linux/') and normalized not in REQUIRED:
+                raise ValueError('Release archive contains an unapproved host deployment asset.')
             if (set(name.parts) & {'.git', '.ssh', '__pycache__'} or
                     (name.name.startswith('MCast.') and re.search(r'(?:Tests|CrashProbe|Consumer)(?:\.|$)', name.name)) or
                     name.suffix.lower() in {'.pdb', '.dbg', '.pfx', '.p12', '.pem', '.key', '.cs', '.cpp', '.vcxproj', '.dmp'}):

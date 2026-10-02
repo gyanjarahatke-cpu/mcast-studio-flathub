@@ -29,6 +29,7 @@ class HostPackageSafetyTests(unittest.TestCase):
         host.validate_contents(data, control, canonical, '1.0.40')
         for original, replacement in [(b'Architecture: all', b'Architecture: amd64'),
                                       (b'Version: 1.0.40', b'Version: 1.0.39'),
+                                      (b'Depends:', b'Depends: gstreamer1.0-tools,'),
                                       (b'Depends:', b'Depends: arbitrary-root-tool,')]:
             altered = copy.deepcopy(control)
             altered['control'] = altered['control'].replace(original, replacement)
@@ -41,6 +42,10 @@ class HostPackageSafetyTests(unittest.TestCase):
         changed = copy.deepcopy(data)
         changed[next(iter(changed))] += b'changed'
         with self.assertRaisesRegex(ValueError, 'differs'):
+            host.validate_contents(changed, control, canonical, '1.0.40')
+        changed = copy.deepcopy(data)
+        changed['usr/share/mcast/virtual-camera/MCastVirtualCameraPlaceholder.png'] = b'removed standby image'
+        with self.assertRaisesRegex(ValueError, 'unexpected'):
             host.validate_contents(changed, control, canonical, '1.0.40')
 
     def inspect(self, member, data=b''):

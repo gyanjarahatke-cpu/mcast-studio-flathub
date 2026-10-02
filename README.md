@@ -26,6 +26,8 @@ The install command checks the bundle signature and downloads the declared runti
 
 Camera, microphone and screen-capture access still follows the permissions and portal support of your Linux desktop. Virtual-camera output additionally needs the host's kernel component; the Flatpak cannot install a kernel module inside its sandbox. Follow the website's current Linux installation guidance for this component. Do not assume Windows game-capture hook support applies to Linux.
 
+Start the virtual camera in MCast before selecting it in a browser or meeting app. When MCast stops sending frames, the driver's timeout clears the last image. The host component does not run a background video publisher or lock the camera to an installation-time image size.
+
 ## Sign the release
 
 Build the canonical self-contained runtime archive inside the selected GNOME SDK, then use the existing manifest generator through the signing-required release tool:

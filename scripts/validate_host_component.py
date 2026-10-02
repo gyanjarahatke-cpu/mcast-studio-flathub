@@ -13,13 +13,11 @@ ASSETS = {
     'lib/systemd/system/mcast-virtual-camera.service': ('mcast-virtual-camera.service', 0o644),
     'lib/udev/rules.d/70-mcast-virtual-camera.rules': ('70-mcast-virtual-camera.rules', 0o644),
     'usr/share/mcast/virtual-camera/cameras.txt': ('cameras.txt', 0o644),
-    'usr/share/mcast/virtual-camera/MCastVirtualCameraPlaceholder.png': ('MCastVirtualCameraPlaceholder.png', 0o644),
 }
 CONTROL_SCRIPTS = {'postinst', 'prerm', 'postrm'}
 DEPENDENCIES = {
     'v4l2loopback-dkms (>= 0.15.0)', 'v4l2loopback-utils (>= 0.15.0)',
-    'v4l-utils', 'gstreamer1.0-tools', 'gstreamer1.0-plugins-base',
-    'gstreamer1.0-plugins-good', 'kmod', 'udev', 'systemd', 'util-linux', 'coreutils',
+    'v4l-utils', 'kmod', 'udev', 'systemd', 'util-linux', 'coreutils',
 }
 PREFIX = 'Tools/virtual-camera/linux/'
 MAX_PACKAGE = 8 * 1024**2
@@ -104,6 +102,8 @@ def control_fields(content):
 
 
 def validate_contents(data, control, canonical, version):
+    if set(data) != set(ASSETS) or set(control) != CONTROL_SCRIPTS | {'control'}:
+        raise ValueError('The host package contains an unexpected or missing asset.')
     for name, content in data.items():
         if content != canonical[ASSETS[name][0]]:
             raise ValueError('The host package differs from the verified application deployment assets.')

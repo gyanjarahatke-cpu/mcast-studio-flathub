@@ -61,6 +61,13 @@ class ReleasePreparationTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'self-contained'):
                 prepare.verify_archive(archive, digest)
 
+    def test_removed_host_standby_payload_is_not_shipped(self):
+        with tempfile.TemporaryDirectory() as folder:
+            removed = tarfile.TarInfo('Tools/virtual-camera/linux/MCastVirtualCameraPlaceholder.png')
+            archive, digest = self.archive(Path(folder), extra=removed)
+            with self.assertRaisesRegex(ValueError, 'unapproved host deployment'):
+                prepare.verify_archive(archive, digest)
+
     def test_local_candidate_uses_same_package_without_fabricated_urls(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)

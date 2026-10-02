@@ -2,7 +2,7 @@
 
 This independent public repository contains packaging tools and desktop metadata for MCast Studio. Application source remains in its private repository. No existing repository needs a visibility change. Windows distribution remains Microsoft Store only; do not upload Windows installers here.
 
-Linux release **1.0.40** is being verified before publication. Application ID: **com.mcaststudio.MCast**. Packaging targets Linux x86_64 with GNOME runtime 50 and uses the `stable` branch. A Flathub store listing is not available yet.
+Linux application release **1.0.40** is available from the [release page](https://github.com/gyanjarahatke-cpu/mcast-studio-flathub/releases/tag/v1.0.40). Application ID: **com.mcaststudio.MCast**. Packaging targets Linux x86_64 with GNOME runtime 50 and uses the `stable` branch. A Flathub store listing is not available yet.
 
 ![MCast Studio workspace with camera preview and audio mixer](screenshots/mcast-studio-workspace.png)
 
@@ -10,9 +10,11 @@ The maintainer-selected listing image is `screenshots/mcast-studio-workspace.png
 
 The earlier **1.0.0-beta.1** package remains a private draft and is not the current release.
 
+The maintainer requested application publication while Virtual Camera host verification remains incomplete. The signed companion package is included as an unverified component; it is not enabled in the website installation flow. The full runtime receipt therefore still reports publicationReady: false. This does not certify the companion installer or all hardware paths. The application can be installed without the companion package.
+
 ## Install or update
 
-Install Flatpak using [your distribution's setup instructions](https://flathub.org/setup). Download the versioned `.flatpak` bundle from the [published GitHub release](https://github.com/gyanjarahatke-cpu/mcast-studio-flathub/releases). The release will appear there only after installation and runtime verification succeeds.
+Install Flatpak using [your distribution's setup instructions](https://flathub.org/setup). Download the versioned `.flatpak` bundle from the [published GitHub release](https://github.com/gyanjarahatke-cpu/mcast-studio-flathub/releases). The application bundle has passed signature verification, fresh installation and startup checks.
 
 From the folder containing the download, run:
 
@@ -125,3 +127,4 @@ python3 -m unittest discover -s tests -v
 ```
 
 These checks validate packaging inputs and generated files. They do not launch or build MCast. The `Check packaging tools` workflow is also manual.
+

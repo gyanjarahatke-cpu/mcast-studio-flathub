@@ -10,23 +10,39 @@ The maintainer-selected listing image is `screenshots/mcast-studio-workspace.png
 
 The earlier **1.0.0-beta.1** package remains a private draft and is not the current release.
 
-## Install or update the signed release
+## Install or update
 
-Install Flatpak using [your distribution's setup instructions](https://flathub.org/setup). Download the versioned `.flatpak` bundle and `mcast-studio-release-key.asc` from the same [published GitHub release](https://github.com/gyanjarahatke-cpu/mcast-studio-flathub/releases). The release will appear there only after installation and runtime verification succeeds.
+Install Flatpak using [your distribution's setup instructions](https://flathub.org/setup). Download the versioned `.flatpak` bundle from the [published GitHub release](https://github.com/gyanjarahatke-cpu/mcast-studio-flathub/releases). The release will appear there only after installation and runtime verification succeeds.
 
-From the folder containing those files, run:
+From the folder containing the download, run:
 
 ```sh
 flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-flatpak install --user --or-update --gpg-file=mcast-studio-release-key.asc MCastStudio-1.0.40-x86_64.flatpak
+flatpak install --user --or-update ./MCastStudio-1.0.40-x86_64.flatpak
 flatpak run com.mcaststudio.MCast//stable
 ```
 
-The install command checks the bundle signature and downloads the declared runtime if needed. Review the signing-key fingerprint published on the MCast website before trusting the key. `SHA256SUMS` and its detached signature `SHA256SUMS.asc` are also included for independent verification. Download future MCast releases and repeat the install command with the new filename; `flatpak update` alone cannot download new MCast bundles from GitHub Releases.
+Review the requested permissions and let installation finish. It downloads the required runtime if needed. For future updates, download the latest MCast release, save your work and close MCast, then repeat the install command with the new filename. Your saved work is kept. `flatpak update` alone cannot download new MCast bundles from GitHub Releases.
 
 Camera, microphone and screen-capture access still follows the permissions and portal support of your Linux desktop. Virtual-camera output additionally needs the host's kernel component; the Flatpak cannot install a kernel module inside its sandbox. Follow the website's current Linux installation guidance for this component. Do not assume Windows game-capture hook support applies to Linux.
 
 Start the virtual camera in MCast before selecting it in a browser or meeting app. When MCast stops sending frames, the driver's timeout clears the last image. The host component does not run a background video publisher or lock the camera to an installation-time image size.
+
+### Advanced: verify the download
+
+The normal installation command verifies the bundle signature using its included public key. To independently compare that key with the release identity published on the [MCast website](https://mcaststudio.com/download/linux/), download `mcast-studio-release-key.asc` from the same release and inspect it:
+
+```sh
+gpg --show-keys --fingerprint ./mcast-studio-release-key.asc
+```
+
+The complete release fingerprint is **F1BD E175 0A31 28A6 1EEE 7D5A F18C 0E1D D11D 6A0C**. If it matches, you can explicitly select that key when installing:
+
+```sh
+flatpak install --user --or-update --gpg-file=./mcast-studio-release-key.asc ./MCastStudio-1.0.40-x86_64.flatpak
+```
+
+This optional command overrides the embedded key; it does not disable signature checks. Flatpak 1.16.6 [selects the embedded key by default and enables verification](https://github.com/flatpak/flatpak/blob/1.16.6/common/flatpak-dir.c), then [rejects a missing or untrusted signature](https://github.com/flatpak/flatpak/blob/1.16.6/common/flatpak-repo-utils.c). The release also includes `SHA256SUMS` and its detached signature `SHA256SUMS.asc` for independent verification. If verification fails, download the files again and contact support if the problem continues.
 
 ## Sign the release
 
